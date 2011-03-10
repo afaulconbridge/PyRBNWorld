@@ -331,16 +331,46 @@ class rbnmol(object):
         if self.composition is None:
             return (self,)
             
-        newcomp = [[self.composition[0]]]
+        newcomp = []
+        this = self.composition[0]
+        #first component is never a "that"
+        #so test it here
+        newthis = this.decomposition(test_bonding)
+        if len(newthis) > 1:
+            for thing in newthis:
+                newcomp.append([thing])
+        else:
+            newcomp.append([this])
+        #test each component that is bonded to
         for i in xrange(len(self.composition)-1):
             this = self.composition[i]
             that = self.composition[i+1]
-            #bond is good, add to new composition
-            if test_bonding(this, that):
-                newcomp[-1].append(that)
-            #bond is bad, change new composition
+            newthat = that.decomposition(test_bonding)
+            if len(newthat) > 1:
+                #that decomposed on its own
+                #use newthat to test the bonds
+
+                
+                #bond is good, add to new composition
+                if test_bonding(this, that):
+                    newcomp[-1].append(newthat[0])
+                    for thing in newthat[1:]:
+                        newcomp.append([thing])
+                #bond is bad, change new composition
+                else:
+                    for thing in newthat:
+                        newcomp.append([thing])
             else:
-                newcomp.append([that])
+                #newthat is no different from that
+                #therefore use that instead
+                
+                #bond is good, add to new composition
+                if test_bonding(this, that):
+                    newcomp[-1].append(that)
+                #bond is bad, change new composition
+                else:
+                    newcomp.append([that])
+        assert len(newcomp) > 0
         #if we have the same composition afterwards
         #nothing broke and we can use ourselves
         if len(newcomp) == 1:
@@ -354,30 +384,25 @@ class rbnmol(object):
                 part = newcomp[i]
                 assert len(part) > 0
                 part = [self.__class__(x.rbn, x.composition) for x in part]
+                #empty bonding sites
+                #between components
                 if i != 0:
                     part = [part[0].empty_all_bonding("l")] + part[1:] 
                 if i != len(newcomp)-1:
                     part = part[:-1] + [part[-1].empty_all_bonding("r")] 
-                #get old state
-                #TODO
                     
                 newmol = self.__class__(None, part)
+                #get old state
+                offset = 0
+                for mol in toreturn:
+                    offset += mol.rbn.n
+                partstates = self.rbn.states[offset:offset+newmol.rbn.n]
+                assert len(partstates) == len(newmol.rbn.states)
+                newmol.rbn.states = partstates
                 
                 toreturn.append(newmol)
-                
-            #empty bonding sites
-            #between components
-                
-        #need to repeat check for decomposition of those newly formed things
-        complete = []
-        for mol in toreturn:
-            if mol is self:
-                complete.append(mol)
-            else:
-                for thing in mol.decomposition(test_bonding):
-                    complete.append(thing)
-        
-        return tuple(complete)
+                       
+        return tuple(toreturn)
             
     def collapse(self):
         if self.composition is None:
@@ -416,38 +441,3 @@ class rbnmol(object):
         copy = self.__class__(self.rbn, newcomposition)
         return copy
                 
-            
-if __name__=="__main__":
-    #some temporary test stuff
-    A = rbnmol.generate(10, 1)
-    B = rbnmol.generate(10, 2)
-    C = rbnmol.generate(10, 3)
-    AB = A.extend(B)
-    print "===", AB
-    AB_C = AB.extend(C)
-    print "===", AB_C
-    ABC = AB.composition[1].extend(C)
-    print "===", ABC
-    D = rbnmol.generate(10,4)
-    D_AB_C = D.extend(AB_C.composition[0])
-    print "===", D_AB_C
-    E = rbnmol.generate(10, 5)
-    DE = D.extend(E)
-    DE_AB_C = DE.composition[-1].extend(AB_C.composition[0])
-    print "===", DE_AB_C
-    DE_AB__C = DE.composition[-1].extend(AB_C.composition[0].composition[0])
-    print "===", DE_AB__C
-    F = rbnmol.generate(10, 6)
-    F_DE = F.extend(DE)
-    F__DE_AB__C = F_DE.composition[-1].composition[-1].extend(AB_C.composition[0].composition[0])
-    print "===", F__DE_AB__C
-    G = rbnmol.generate(10, 7)
-    H = rbnmol.generate(10, 8)
-    AB_C__G = AB_C.extend(G)
-    H__F_DE = H.extend(F_DE)
-    print H__F_DE.composition[-1].composition[-1].composition[-1]
-    print AB_C__G.composition[0].composition[0].composition[0]
-    H__F_DEAB_C__G = H__F_DE.composition[-1].composition[-1].composition[-1].extend(AB_C__G.composition[0].composition[0].composition[0])
-    print H__F_DE.composition[-1].composition[-1].extend(AB_C__G.composition[0].composition[0])
-    print "===", H__F_DEAB_C__G
-    

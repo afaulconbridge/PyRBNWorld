@@ -24,11 +24,34 @@ def decompose(*mols):
         for mol in mols:
             for outmol in decompose(mol):
                 newmols.append(outmol)
+    assert len(newmols) > 0
     newmols = tuple(newmols)
     if newmols != mols:
         return decompose(*newmols)
     else:
         return mols
+        
+def validate(mol):
+    if mol.composing is None:
+        #top level, can drill through it checking bonding sites
+        assert 1 not in mol.rbn.bonding.values(), product
+        drill = mol
+        while drill.composition is not None:
+            drill = drill.composition[0]
+            assert drill.rbn.bonding[0] == 0, drill
+        drill = mol
+        while drill.composition is not None:
+            drill = drill.composition[-1]
+            assert drill.rbn.bonding[max(drill.rbn.bonding)] == 0, drill
+    else:
+        assert mol.composing.composition is not None
+        assert mol in mol.composing.composition
+    if mol.composition is None:
+        return
+    else:
+        assert len(mol.composition) > 1
+        for test in mol.composition:
+            validate(test)
     
 
 def reaction(A00, B00):
@@ -134,35 +157,6 @@ def reaction(A00, B00):
     products = newproducts
         
     for product in products:
-        assert 1 not in product.rbn.bonding.values(), product
-        #check bookending bonding sites at all levels
-        drill = product
-        while drill.composition is not None:
-            drill = drill.composition[0]
-            assert drill.rbn.bonding[0] == 0, drill
-        drill = product
-        while drill.composition is not None:
-            drill = drill.composition[-1]
-            assert drill.rbn.bonding[max(drill.rbn.bonding)] == 0, drill
-            
-        #check internal bonding sites
-        def validate(mol):
-            if mol.composing is not None:
-                assert mol.composing.composition is not None
-                assert mol in mol.composing.composition
-            if mol.composition is None:
-                return
-            
-            for test in mol.composition:
-                #if test is mol.composition[0]:
-                #    assert test.rbn.bonding[0] == 0
-                #else:
-                #    assert test.rbn.bonding[0] == 1
-                #if test is mol.composition[-1]:
-                #    assert test.rbn.bonding[max(test.rbn.bonding)] == 0
-                #else:
-                #    assert test.rbn.bonding[max(test.rbn.bonding)] == 1
-                validate(test)
         validate(product)
             
         
