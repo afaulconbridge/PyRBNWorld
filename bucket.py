@@ -7,15 +7,6 @@ def mols_to_string(mols):
     for thing in mols:
         toreturn = toreturn + str(thing) + " + "
     return toreturn[:-3]
-
-def printout(reatants, products):
-    print str(reactants[0]), "+", str(reactants[1]),
-    print "=>",
-    for thing in products:
-        print str(thing),
-        if thing is not products[-1]:
-            print "+",
-    print ""
     
 def to_elements(mols):
     elements = []
@@ -25,33 +16,64 @@ def to_elements(mols):
                 elements.append(letter)
     return elements
 
-if __name__=="__main__":
-    bucket = []
-    seed = 20
-    copies = 200
-    steps = 200
-    rng = random.Random(42)
-    
-    
-    for i in xrange(seed):
-        bucket = bucket + [rbnmol.rbnmol.generate(10, i) for j in xrange(copies)]
+class Bucket(object):
+    def __init__(self, rbncls):
+        self.content = []
+        self.rbncls = rbncls
         
-    for i in xrange(steps):
-        rng.shuffle(bucket)
+    def fill(self, seeds, copies):
+        self.content = []
+        for seed in seeds:
+            self.content = self.content + [self.rbncls.generate(10, seed)] * copies
+            
+    def run(self, steps, rng=None):
+        if rng is None:
+            rng = random.Random()
+            
+        for i in xrange(steps):
+            rng.shuffle(self.content)
+            nextbucket = self.step()
+            self.content = nextbucket
+            
+    def step(self):
         nextbucket = []
-        for j in xrange(0, len(bucket), 2):
-            if j < len(bucket)-1:
-                reactants = (bucket[j], bucket[j+1])
-                assert bucket[j] is not bucket[j+1]
-                #print "Reactants:", mols_to_string(reactants)
+        for j in xrange(0, len(self.content), 2):
+            if j < len(self.content)-1:
+                reactants = (self.content[j], self.content[j+1])
                 products = tuple(reaction.reaction(*reactants))
                 if reactants != products:
-                    printout(reactants, products)
+                    self.report(reactants, products)
                     
                 #sanity check it is all the same stuff
                 assert to_elements(reactants) == to_elements(products)
                     
                 nextbucket = nextbucket + list(products)
             else:
-                nextbucket.append(bucket[j])
-        bucket = nextbucket
+                nextbucket.append(self.content[j])
+        return nextbucket
+
+    @classmethod
+    def report(cls, reactants, products):
+        for thing in reactants:
+            print str(thing),
+            if thing is not reactants[-1]:
+                print "+",
+        print "=>",
+        for thing in products:
+            print str(thing),
+            if thing is not products[-1]:
+                print "+",
+        print ""
+
+    
+if __name__=="__main__":
+    
+    
+    
+    rbncls = rbnmol.make_rbnmol_class(rbnmol.total, rbnmol.sumzero)
+    rng = random.Random(42)
+    
+    
+    bucket = Bucket(rbncls)
+    bucket.fill(xrange(20), 200)
+    bucket.run(200, rng)

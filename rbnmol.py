@@ -1,31 +1,60 @@
 import rbn as RBN
 
-class rbnmol(object):
-    #this isnt so much a molecule as a moleucle, functional group, or atom
-    #each rbnmol contains references to the rbnmols it is composed of (if applicable)
 
-    #defined here so __new__ and __init__ know which has been called
+def make_rbnmol_class(bonding_score, bonding_criterion):
+    """
+    Class factory function. Given a bonding score function and a bonding criterion function
+    this returns a subclass (not an instance of a class, but the actual class) of rbnmol
+    that uses those functions.
+    
+    
+    """
+    newnamespace = {"bonding_score":bonding_score, "bonding_criterion":bonding_criterion}
+    newcls = type("rbnmol_"+bonding_score.__name__+"_"+bonding_criterion.__name__, (rbnmol,), newnamespace)
+    return newcls
+
+    
+#alternative AChems can, to an extent, be implemented through these functions
+
+def total(self):
+    score = 0
+    for step in self.rbn.cycle():
+        for state in step:
+            if state == 0:
+                score -= 1
+            elif state == 1:
+                score += 1
+    return score
+
+def sumzero(self, other):
+    return self.bonding_score() + other.bonding_score() == 0.0
+    
+def sumzero_pm_one(self, other):
+    return -1.0 < self.bonding_score() + other.bonding_score() < 1.0
+
+
+#this is the core of all RBNMol objects
+class rbnmol(object):
+    #this isnt just a molecule but also a functional group, or atom
+    #each rbnmol contains references to the rbnmols it is 
+    #composed of (if applicable) as well as references to the
+    #rbnmol it is composing (if applicable)
+
     #composition is the smaller bRBNs that we are made of
     composition = None
     #composing is the larger bRBN that we are part of
     composing = None
+    #bRBN representation
     rbn = None
     
     #this is a class list of all different
     #atomic rbn structures for naming of
     #elementals for string representation
     elements = []
-    #and this stores rbn states of previously named structured
+    #and this stores rbn states of previously named structures
     #so new ones can have a new number
     _namecache = {}
     
-    
-    def test(self):
-        assert self.rbn is not None
-        if self.composing is not None:
-            assert self in self.composing.composition
-            #check equivalence of bonding sites
-
     @classmethod
     def generate(cls, n, seed=None, rng = None):
         #both seed AND rng being specified makes no sense
@@ -149,6 +178,14 @@ class rbnmol(object):
         assert toreturn == (hash(self) == hash(other))
         assert toreturn == (repr(self) == repr(other))
         return toreturn
+        
+    def __getstate__(self):
+        return self.composing, self.compositiong, self.rbn
+        
+    def __setstate__(self, state):
+        self.composing = state[0]
+        self.composition = state[1]
+        self.rbn = state[2]
         
     def top_steps(self):
         upsteps = 0
@@ -334,7 +371,7 @@ class rbnmol(object):
         return toreturn
                 
         
-    def decomposition(self, test_bonding):
+    def decomposition(self):
         #no bonds to check, cant decompose
         if self.composition is None:
             return (self,)
@@ -343,7 +380,7 @@ class rbnmol(object):
         this = self.composition[0]
         #first component is never a "that"
         #so test it here
-        newthis = this.decomposition(test_bonding)
+        newthis = this.decomposition()
         if len(newthis) > 1:
             for thing in newthis:
                 newcomp.append([thing])
@@ -353,14 +390,14 @@ class rbnmol(object):
         for i in xrange(len(self.composition)-1):
             this = self.composition[i]
             that = self.composition[i+1]
-            newthat = that.decomposition(test_bonding)
+            newthat = that.decomposition()
             if len(newthat) > 1:
                 #that decomposed on its own
                 #use newthat to test the bonds
 
                 
                 #bond is good, add to new composition
-                if test_bonding(this, that):
+                if this.bonding_criterion(that):
                     newcomp[-1].append(newthat[0])
                     for thing in newthat[1:]:
                         newcomp.append([thing])
@@ -373,7 +410,7 @@ class rbnmol(object):
                 #therefore use that instead
                 
                 #bond is good, add to new composition
-                if test_bonding(this, that):
+                if this.bonding_criterion(that):
                     newcomp[-1].append(that)
                 #bond is bad, change new composition
                 else:
@@ -434,4 +471,3 @@ class rbnmol(object):
                 return self
             else:
                 return self.__class__(self.rbn, newcomposition).collapse()
-       

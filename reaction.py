@@ -1,24 +1,9 @@
 import rbnmol
 
-
-def test_bonding(A,B):
-    #return len(A.rbn.cycle()) == len(B.rbn.cycle())
-    def score_rbn(mol):
-        score = 0
-        for step in mol.rbn.cycle():
-            for state in step:
-                if state == 0:
-                    score -= 1
-                elif state == 1:
-                    score += 1
-        return score
-    return -1 < score_rbn(A) + score_rbn(B) < 1
-
-
 def decompose(*mols):
     assert len(mols) > 0
     if len(mols) == 1:
-        newmols = mols[0].decomposition(test_bonding)
+        newmols = mols[0].decomposition()
     else:
         newmols = []
         for mol in mols:
@@ -55,7 +40,7 @@ def validate(mol):
     
 
 def reaction(A00, B00):
-    #for the moment, dont do complicated flipping-ness
+    #dont do complicated flipping-ness
     #reactions are either A+B or B+A. Assume this has
     #been done before this function.
     
@@ -74,7 +59,7 @@ def reaction(A00, B00):
     reacting = False
     while reacting is False:
         #if these can react, react
-        if test_bonding(A00, B00):
+        if A00.bonding_criterion(B00):
             reacting = True
         else:
             if A00.composing is None and B00.composing is None:
@@ -128,7 +113,7 @@ def reaction(A00, B00):
     B10 = B10_top.drill("l", upstepsB)
     
     #see if bonding can continue
-    if test_bonding(A01, B10):
+    if A01.bonding_criterion(B10):
         #if this is the top-most, then create a new composite and return it
         #have to do complicated extensions stuff if it is not
         #but this function will deal with that...
@@ -159,7 +144,4 @@ def reaction(A00, B00):
     for product in products:
         validate(product)
             
-        
     return tuple(products)
-    
-    
