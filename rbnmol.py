@@ -141,6 +141,8 @@ class rbnmol(object):
     def __eq__(self, other):
         if other is None:
             return False
+        if other is self:
+            return True
         assert self.rbn is not None
         assert other.rbn is not None
         toreturn = ((self.rbn == other.rbn) and (self.composition == other.composition))
@@ -432,18 +434,4 @@ class rbnmol(object):
                 return self
             else:
                 return self.__class__(self.rbn, newcomposition).collapse()
-            
        
-    def __deepcopy__(self, memo={}):
-        if self.composition is None:
-            newcomposition = None
-        else:
-            newcomposition = []
-            for x in self.composition:
-                if x not in memo:
-                    memo[x] = copy.deepcopy(x)
-                newcomposition.append(memo[x])
-                    
-        copy = self.__class__(self.rbn, newcomposition)
-        return copy
-                
