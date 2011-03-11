@@ -41,12 +41,12 @@ if __name__=="__main__":
         nextbucket = []
         for j in xrange(0, len(bucket), 2):
             if j < len(bucket)-1:
-                reactants = bucket[j], bucket[j+1]
+                reactants = (bucket[j], bucket[j+1])
                 assert bucket[j] is not bucket[j+1]
                 #print "Reactants:", mols_to_string(reactants)
-                products = reaction.reaction(*reactants)
-                #if reactants != products:
-                #    printout(reactants, products)
+                products = tuple(reaction.reaction(*reactants))
+                if reactants != products:
+                    printout(reactants, products)
                     
                 #sanity check it is all the same stuff
                 assert to_elements(reactants) == to_elements(products)

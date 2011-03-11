@@ -42,7 +42,6 @@ class rbnmol(object):
         #if we dont have an rbn, we can make one if we are a composite
         if rbn is None:
             assert composition is not None
-            assert self not in composition
             #can have compositions of length one temporarilly
             #to extend other ones with
             #assert len(composition) > 1
@@ -140,7 +139,14 @@ class rbnmol(object):
         return hash(self.rbn)+hash(self.composition)
         
     def __eq__(self, other):
-        return self.rbn == other.rbn and self.composition == other.composition
+        if other is None:
+            return False
+        assert self.rbn is not None
+        assert other.rbn is not None
+        toreturn = ((self.rbn == other.rbn) and (self.composition == other.composition))
+        assert toreturn == (hash(self) == hash(other))
+        assert toreturn == (repr(self) == repr(other))
+        return toreturn
         
     def top_steps(self):
         upsteps = 0

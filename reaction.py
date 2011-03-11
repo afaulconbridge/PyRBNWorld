@@ -160,6 +160,6 @@ def reaction(A00, B00):
         validate(product)
             
         
-    return products
+    return tuple(products)
     
     
