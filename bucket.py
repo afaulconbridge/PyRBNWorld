@@ -20,6 +20,7 @@ class Bucket(object):
     def __init__(self, rbncls):
         self.content = []
         self.rbncls = rbncls
+        self.reactions = set()
         
     def fill(self, seeds, copies):
         self.content = []
@@ -41,8 +42,12 @@ class Bucket(object):
             if j < len(self.content)-1:
                 reactants = (self.content[j], self.content[j+1])
                 products = tuple(reaction.reaction(*reactants))
-                if reactants != products:
-                    self.report(reactants, products)
+                thisreaction = (reactants, products)
+                if products != reactants:
+                    if thisreaction not in self.reactions:
+                        self.report(reactants, products)
+                    self.reactions.add(thisreaction)
+                    
                     
                 #sanity check it is all the same stuff
                 assert to_elements(reactants) == to_elements(products)
@@ -67,13 +72,8 @@ class Bucket(object):
 
     
 if __name__=="__main__":
-    
-    
-    
     rbncls = rbnmol.make_rbnmol_class(rbnmol.total, rbnmol.sumzero)
     rng = random.Random(42)
-    
-    
     bucket = Bucket(rbncls)
     bucket.fill(xrange(20), 200)
     bucket.run(200, rng)
