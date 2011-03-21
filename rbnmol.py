@@ -92,8 +92,12 @@ class rbnmol(object):
             assert testrbn.functions == rbn.functions
             
         assert len(rbn.bonding) == 2
-                
+        
+        #move rbn to be the start of the cycle
         self.rbn = rbn
+        self.rbn = self.rbncyclestate()
+        
+        
         if composition is not None:
             #doesnt have to be this way but for the moment this
             #is a good thing to check stupid bugs havnt crept in
@@ -175,12 +179,13 @@ class rbnmol(object):
         assert self.rbn is not None
         assert other.rbn is not None
         toreturn = ((self.rbn == other.rbn) and (self.composition == other.composition))
-        assert toreturn == (hash(self) == hash(other))
+        if toreturn:
+            assert hash(self) == hash(other)
         assert toreturn == (repr(self) == repr(other))
         return toreturn
         
     def __getstate__(self):
-        return self.composing, self.compositiong, self.rbn
+        return self.composing, self.composition, self.rbn
         
     def __setstate__(self, state):
         self.composing = state[0]
@@ -205,6 +210,18 @@ class rbnmol(object):
                 return self.composition[0].drill(side, steps-1)
         return self
             
+            
+    
+    def rbncyclestate(self):
+        #this is the first state on the cycle
+        #this means that x.cyclestate().cyclestate() is the same as x.cyclestate() in all cases
+        #if it was the last state on the cycle, it would move around the cycle backwards!
+        if self.rbn.cycle()[0] != self.rbn.states:
+            newrbn = self.rbn.__class__(self.rbn.cycle()[0], self.rbn.functions, self.rbn.inputs, self.rbn.bonding)
+            assert newrbn.cycle()[0] == newrbn.states
+            return newrbn
+        else:
+            return self.rbn
             
     def fill_all_bonding(self, side):
         return self.set_all_bonding(side, 1)
