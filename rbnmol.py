@@ -1,38 +1,5 @@
 import rbn as RBN
 
-
-def make_rbnmol_class(bonding_score, bonding_criterion):
-    """
-    Class factory function. Given a bonding score function and a bonding criterion function
-    this returns a subclass (not an instance of a class, but the actual class) of rbnmol
-    that uses those functions.
-    
-    
-    """
-    newnamespace = {"bonding_score":bonding_score, "bonding_criterion":bonding_criterion}
-    newcls = type("rbnmol_"+bonding_score.__name__+"_"+bonding_criterion.__name__, (rbnmol,), newnamespace)
-    return newcls
-
-    
-#alternative AChems can, to an extent, be implemented through these functions
-
-def total(self):
-    score = 0
-    for step in self.rbn.cycle():
-        for state in step:
-            if state == 0:
-                score -= 1
-            elif state == 1:
-                score += 1
-    return score
-
-def sumzero(self, other):
-    return self.bonding_score() + other.bonding_score() == 0.0
-    
-def sumzero_pm_one(self, other):
-    return -1.0 < self.bonding_score() + other.bonding_score() < 1.0
-
-
 #this is the core of all RBNMol objects
 class rbnmol(object):
     #this isnt just a molecule but also a functional group, or atom
@@ -488,3 +455,29 @@ class rbnmol(object):
                 return self
             else:
                 return self.__class__(self.rbn, newcomposition).collapse()
+
+    
+#alternative AChems can, to an extent, be implemented through these functions
+
+def total(self):
+    score = 0
+    for step in self.rbn.cycle():
+        for state in step:
+            if state == 0:
+                score -= 1
+            elif state == 1:
+                score += 1
+    return score
+
+def sumzero(self, other):
+    return self.bonding_score() + other.bonding_score() == 0.0
+    
+def sumzero_pm_one(self, other):
+    return -1.0 < self.bonding_score() + other.bonding_score() < 1.0
+
+#because custm class picking is a pain, dont do it
+#instead create a real copy of the class somewhere in the file system and use that instead
+
+class rbnmol_total_sumzero(rbnmol):
+    bonding_score = total
+    bonding_criterion = sumzero                    
