@@ -1,5 +1,6 @@
 import random
 import rbnmol
+import rbnmol_cached
 import reaction
 
 def mols_to_string(mols):
@@ -72,8 +73,15 @@ class Bucket(object):
 
     
 if __name__=="__main__":
-    rbncls = rbnmol.make_rbnmol_class(rbnmol.total, rbnmol.sumzero)
+    rbncls = rbnmol.rbnmol_total_sumzero
+    
+    import sys
+    print sys.argv
+    if len(sys.argv) >= 2 and sys.argv[1] == "cached":
+        rbncls = rbnmol_cached.rbnmol_cached_total_sumzero
+        print "Using cached rbnmol class"
+    
     rng = random.Random(42)
     bucket = Bucket(rbncls)
-    bucket.fill(xrange(20), 200)
-    bucket.run(200, rng)
+    bucket.fill(xrange(10), 20)
+    bucket.run(100, rng)
