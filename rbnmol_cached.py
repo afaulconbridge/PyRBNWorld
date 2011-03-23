@@ -16,21 +16,25 @@ class rbnmol_cached(rbnmol.rbnmol):
     classes of non-determinisitc molecules.
     """
     
-    #def __init__(self, rbn, composition=None):
-    #    return super(self, rbnmol_cached).__init__(self, rbn, composition)
+    _generate = {}
     
-    _instances = {}
+    @classmethod
+    def generate(cls, n, seed = None, rng = None):
+        if rng is not None:
+            return super(rbnmol_cached, cls).generate(n, seed, rng)
+            
+        key = (n, seed)
+        if key not in cls._generate:
+            cls._generate[key] = super(rbnmol_cached, cls).generate(n, seed)
+        return cls._generate[key]
     
-    def __new__(cls, rbn, composition=None):
-        key = (rbn, composition)
-        if key not in cls._instances:
-            new = rbnmol.rbnmol.__new__(cls, rbn, composition)
-            cls._instances[key] = new
-        return cls._instances[key] 
-        #This has problems when instances are created and then changed. 
-        #That happens a few times, for flipping and extending and such
-        #Need to fix the underlying code so that doesnt happn, not
-        #sure how though - it was fiddly enough the first time...
+    _from_genome = {}
+    
+    @classmethod
+    def from_genome(cls, genome):
+        if genome not in cls._from_genome:
+            cls._from_genome[genome] = super(rbnmol_cached, cls).from_genome(genome)
+        return cls._from_genome[genome]
     
     _collapse = None
     
@@ -45,6 +49,33 @@ class rbnmol_cached(rbnmol.rbnmol):
         if self._decomposition is None:
             self._decomposition = super(rbnmol_cached, self).decomposition()
         return self._decomposition
+
+    _set_all_bonding = {}
+    
+    def set_all_bonding(self, side, state):
+        key = (self, side, state)
+        if key not in self._set_all_bonding:
+            self._set_all_bonding[key] = super(rbnmol_cached, self).set_all_bonding(side, state)
+        return self._set_all_bonding[key]
+        
+    _set_this_bonding = {}
+    
+    def set_this_bonding(self, side, state):
+        key = (self, side, state)
+        if key not in self._set_this_bonding:
+            self._set_this_bonding[key] = super(rbnmol_cached, self).set_this_bonding(side, state)
+        return self._set_this_bonding[key]
+        
+        
+    _extend = {}
+    
+    def extend(self, other):
+        key = (self, other)
+        if key not in self._extend:
+            self._extend[key] = super(rbnmol_cached, self).extend(other)
+        return self._extend[key]
+        
+        
 
 
 class rbnmol_cached_total_sumzero(rbnmol_cached):

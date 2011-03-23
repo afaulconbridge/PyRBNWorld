@@ -26,7 +26,8 @@ class Bucket(object):
     def fill(self, seeds, copies):
         self.content = []
         for seed in seeds:
-            self.content = self.content + [self.rbncls.generate(10, seed)] * copies
+            for i in xrange(copies):
+                self.content = self.content + [self.rbncls.generate(10, seed)]
             
     def run(self, steps, rng=None):
         if rng is None:
@@ -45,8 +46,9 @@ class Bucket(object):
                 products = tuple(reaction.reaction(*reactants))
                 thisreaction = (reactants, products)
                 if products != reactants:
-                    if thisreaction not in self.reactions:
-                        self.report(reactants, products)
+                    #if thisreaction not in self.reactions:
+                    #    self.report(reactants, products)
+                    self.report(reactants, products)
                     self.reactions.add(thisreaction)
                     
                     

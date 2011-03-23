@@ -92,8 +92,6 @@ def reaction(A00, B00):
                     #use both of them
                     A00 = A00.composing
                     B00 = B00.composing
-            else:
-                assert False, "Should never get here...."
                 
     assert reacting is True
     

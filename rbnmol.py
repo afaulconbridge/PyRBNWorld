@@ -30,11 +30,12 @@ class rbnmol(object):
         return cls(rbn)
     
     @classmethod
-    def from_genome(cls, b=0):
+    def from_genome(cls, genome):
         rbn = RBN.rbn.from_genome(n, genome, b=2)
         return cls(rbn)
     
     def __init__(self, rbn, composition = None):
+        
         #if we dont have an rbn, we can make one if we are a composite
         if rbn is None:
             assert composition is not None
