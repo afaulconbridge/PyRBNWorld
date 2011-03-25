@@ -85,9 +85,6 @@ class rbnmol_cached(rbnmol.rbnmol):
             #self._cachemisses.add((self, other))
             self._extend[key] = super(rbnmol_cached, self).extend(other)
         return self._extend[key]
-        
-        
-
 
 class rbnmol_cached_total_sumzero(rbnmol_cached):
     bonding_score = rbnmol.total

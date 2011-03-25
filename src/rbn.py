@@ -22,13 +22,6 @@ class rbn(object):
     def states(self):
         return self._states
 
-    @states.setter
-    def states_set(self, states):
-        raise AttributeError, "States is read-only"
-        
-    @states.deleter
-    def states_del(self):
-        raise AttributeError, "States is read-only"
 
     @classmethod
     def generate(cls, n, seed=None, rng = None, b=0):
