@@ -16,6 +16,20 @@ class rbn(object):
     bonding = None
     _hash = None
 
+
+    _states = None
+    @property
+    def states(self):
+        return self._states
+
+    @states.setter
+    def states_set(self, states):
+        raise AttributeError, "States is read-only"
+        
+    @states.deleter
+    def states_del(self):
+        raise AttributeError, "States is read-only"
+
     @classmethod
     def generate(cls, n, seed=None, rng = None, b=0):
         states = []
@@ -79,7 +93,7 @@ class rbn(object):
         #this was already initialized by a previous __new__ call
         if self.states is not None:
             return
-        self.states = tuple(states)
+        self._states = tuple(states)
         self.functions = tuple(functions)
         self.inputs = tuple([tuple(x) for x in inputs])
         #this should be a frozen dict, but dont have one of those right now...
@@ -91,14 +105,16 @@ class rbn(object):
         
         
     def __hash__(self):
-        if self._hash is None:
-            self._hash = hash(hash(self.states)+hash(self.functions)+hash(self.inputs))
+        self._hash = hash(hash(self.states)+hash(self.functions)+hash(self.inputs))
         return self._hash
         
     def __eq__(self, other):
         if other is None:
             return False
-        return self.states == other.states and self.functions == other.functions and self.inputs == other.inputs and self.bonding == other.bonding
+        toreturn = self.states == other.states and self.functions == other.functions and self.inputs == other.inputs and self.bonding == other.bonding
+        if toreturn:
+            assert hash(self) == hash(other)
+        return toreturn
         
     def __add__(self, other):
         reactants = (self, other)

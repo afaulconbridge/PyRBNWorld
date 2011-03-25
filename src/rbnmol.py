@@ -335,7 +335,7 @@ class rbnmol(object):
             toreturn = cls(None, this.composing.composition + that.composing.composition)
             newstates = this.composing.rbn.states + that.composing.rbn.states
             assert len(newstates) == len(toreturn.rbn.states)
-            toreturn.rbn.states = newstates
+            toreturn.rbn = toreturn.rbn.__class__(newstates, toreturn.rbn.functions, toreturn.rbn.inputs, toreturn.rbn.bonding)
             #this should zip up multiple levels of molecule
             while this.composing.composing is not None and that.composing.composing is not None:
                 #get the new state to use before constructing the new toreturn
@@ -348,7 +348,7 @@ class rbnmol(object):
                 
                 toreturn = cls(None, this.composing.composing.composition[:-1] + (toreturn,) + that.composing.composing.composition[1:])
                 assert len(newstates) == len(toreturn.rbn.states), [len(newstates), len(toreturn.rbn.states), len(newstatesa), len(newstatesb), len(newstatesc)]
-                toreturn.rbn.states = newstates
+                toreturn.rbn = toreturn.rbn.__class__(newstates, toreturn.rbn.functions, toreturn.rbn.inputs, toreturn.rbn.bonding)
                 
                 
                 this = this.composing
@@ -428,7 +428,7 @@ class rbnmol(object):
                     offset += mol.rbn.n
                 partstates = self.rbn.states[offset:offset+newmol.rbn.n]
                 assert len(partstates) == len(newmol.rbn.states)
-                newmol.rbn.states = partstates
+                newmol.rbn = newmol.rbn.__class__(partstates, newmol.rbn.functions,  newmol.rbn.inputs, newmol.rbn.bonding)
                 
                 toreturn.append(newmol)
                        

@@ -44,13 +44,13 @@ class Bucket(object):
                 products = tuple(reaction.reaction(*reactants))
                 thisreaction = (reactants, products)
                 if products != reactants:
-                    #if thisreaction not in self.reactions:
-                    #    self.report(reactants, products)
-                    self.report(reactants, products)
+                    if thisreaction not in self.reactions:
+                        self.report(reactants, products)
+                    #self.report(reactants, products)
                     self.reactions.add(thisreaction)
                     
                     
-                #sanity check it is all the same stuff
+                #sanity check for conservation of mas
                 assert to_elements(reactants) == to_elements(products)
                     
                 nextbucket = nextbucket + list(products)

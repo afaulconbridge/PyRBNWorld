@@ -50,28 +50,39 @@ class rbnmol_cached(rbnmol.rbnmol):
             self._decomposition = super(rbnmol_cached, self).decomposition()
         return self._decomposition
 
-    _set_all_bonding = {}
+    _set_all_bonding = None
     
     def set_all_bonding(self, side, state):
-        key = (self, side, state)
+        if self._set_all_bonding is None:
+            self._set_all_bonding = {}
+        key = (side, state)
         if key not in self._set_all_bonding:
             self._set_all_bonding[key] = super(rbnmol_cached, self).set_all_bonding(side, state)
         return self._set_all_bonding[key]
         
-    _set_this_bonding = {}
+    _set_this_bonding = None
     
     def set_this_bonding(self, side, state):
-        key = (self, side, state)
+        if self._set_this_bonding is None:
+            self._set_this_bonding = {}
+        key = (side, state)
         if key not in self._set_this_bonding:
             self._set_this_bonding[key] = super(rbnmol_cached, self).set_this_bonding(side, state)
         return self._set_this_bonding[key]
         
         
-    _extend = {}
+    _extend = None
+    
+    #_cachemisses = set()
     
     def extend(self, other):
-        key = (self, other)
+        if self._extend is None:
+            self._extend = {}
+        key = other
         if key not in self._extend:
+            #print "CACHE MISS:", "extend", self, other
+            #assert (self, other) not in self._cachemisses
+            #self._cachemisses.add((self, other))
             self._extend[key] = super(rbnmol_cached, self).extend(other)
         return self._extend[key]
         

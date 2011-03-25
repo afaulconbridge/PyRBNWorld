@@ -17,7 +17,7 @@ if __name__ == "__main__":
     
     rng = random.Random(42)
     buck = bucket.Bucket(rbncls)
-    buck.fill(xrange(10), 20)
+    buck.fill(xrange(20), 50)
     buck.run(100, rng)
 
     
