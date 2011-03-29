@@ -72,3 +72,26 @@ class Bucket(object):
         print ""
 
     
+class BucketText(Bucket):
+    """
+    Bucket that reports progress through terminal using the progressbar
+    module (http://code.google.com/p/python-progressbar/)
+    
+    Does not report reactions.
+    """
+    
+    def run(self, steps, rng):
+        import progressbar
+        bar = progressbar.ProgressBar()
+        
+        if rng is None:
+            rng = random.Random()
+            
+        for i in bar(xrange(steps)):
+            rng.shuffle(self.content)
+            nextbucket = self.step()
+            self.content = nextbucket
+
+    @classmethod
+    def report(cls, reactants, products):
+        pass

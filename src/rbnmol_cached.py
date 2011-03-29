@@ -18,6 +18,18 @@ class rbnmol_cached(rbnmol.rbnmol):
     
     _generate = {}
     
+    _seen = {}
+    
+    @classmethod
+    def seen(cls, mol):
+        if mol.composing is not None:
+            return mol
+        if mol in cls._seen:
+            return cls._seen[mol]
+        else:
+            cls._seen[mol] = mol
+            return mol
+    
     @classmethod
     def generate(cls, n, seed = None, rng = None):
         if rng is not None:
@@ -26,6 +38,7 @@ class rbnmol_cached(rbnmol.rbnmol):
         key = (n, seed)
         if key not in cls._generate:
             cls._generate[key] = super(rbnmol_cached, cls).generate(n, seed)
+            
         return cls._generate[key]
     
     _from_genome = {}
@@ -40,14 +53,18 @@ class rbnmol_cached(rbnmol.rbnmol):
     
     def collapse(self):
         if self._collapse is None:
-            self._collapse = super(rbnmol_cached, self).collapse()
+            mol = super(rbnmol_cached, self).collapse()
+            #mol = self.seen(mol)
+            self._collapse = mol
         return self._collapse
     
     _decomposition = None
     
     def decomposition(self):
         if self._decomposition is None:
-            self._decomposition = super(rbnmol_cached, self).decomposition()
+            mols = super(rbnmol_cached, self).decomposition()
+            mols = [self.seen(x) for x in mols]
+            self._decomposition = mols
         return self._decomposition
 
     _set_all_bonding = None
@@ -57,7 +74,9 @@ class rbnmol_cached(rbnmol.rbnmol):
             self._set_all_bonding = {}
         key = (side, state)
         if key not in self._set_all_bonding:
-            self._set_all_bonding[key] = super(rbnmol_cached, self).set_all_bonding(side, state)
+            mol = super(rbnmol_cached, self).set_all_bonding(side, state)
+            mol = self.seen(mol)
+            self._set_all_bonding[key] = mol
         return self._set_all_bonding[key]
         
     _set_this_bonding = None
@@ -67,7 +86,9 @@ class rbnmol_cached(rbnmol.rbnmol):
             self._set_this_bonding = {}
         key = (side, state)
         if key not in self._set_this_bonding:
-            self._set_this_bonding[key] = super(rbnmol_cached, self).set_this_bonding(side, state)
+            mol = super(rbnmol_cached, self).set_this_bonding(side, state)
+            mol = self.seen(mol)
+            self._set_this_bonding[key] = mol
         return self._set_this_bonding[key]
         
         
@@ -83,8 +104,17 @@ class rbnmol_cached(rbnmol.rbnmol):
             #print "CACHE MISS:", "extend", self, other
             #assert (self, other) not in self._cachemisses
             #self._cachemisses.add((self, other))
-            self._extend[key] = super(rbnmol_cached, self).extend(other)
+            mol = super(rbnmol_cached, self).extend(other)
+            mol = self.seen(mol)
+            self._extend[key] = mol
         return self._extend[key]
+        
+    _rbntree = None
+    @property
+    def rbntree(self):
+        if self._rbntree is None:
+            self._rbntree = super(rbnmol_cached, self).rbntree
+        return self._rbntree
 
 class rbnmol_cached_total_sumzero(rbnmol_cached):
     bonding_score = rbnmol.total

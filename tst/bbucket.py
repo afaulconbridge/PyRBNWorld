@@ -8,6 +8,7 @@ import bucket
 import rbnmol
 import rbnmol_cached
 
+
 if __name__ == "__main__":
     rbncls = rbnmol.rbnmol_total_sumzero
     
@@ -16,8 +17,8 @@ if __name__ == "__main__":
         print "Using cached rbnmol class"
     
     rng = random.Random(42)
-    buck = bucket.Bucket(rbncls)
+    buck = bucket.BucketText(rbncls)
     buck.fill(xrange(20), 50)
-    buck.run(100, rng)
+    buck.run(200, rng)
 
     

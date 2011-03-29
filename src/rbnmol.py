@@ -137,19 +137,46 @@ class rbnmol(object):
         return str(self)
     
     def __hash__(self):
-        return hash(self.rbn)+hash(self.composition)
+        myatoms = self.atoms
+        topatoms = self.top_steps()[0].atoms
+        atomids = []
+        for atom in myatoms:
+            for i in xrange(len(topatoms)):
+                if topatoms[i] is atom:
+                    atomids.append(i)
+        atomids = tuple(atomids)
+        return hash(self.rbn) + hash(self.composition)# + hash(atomids)
         
-    def __eq__(self, other):
+    @property
+    def rbntree(self):
+        tree = []
+        if self.composition is None:
+            return (self.rbn, None)
+        else:
+            return (self.rbn, tuple([x.rbntree for x in self.composition]))
+            
+    def __eq__(self, other, assume = None):
         if other is None:
             return False
         if other is self:
             return True
         assert self.rbn is not None
         assert other.rbn is not None
-        toreturn = ((self.rbn == other.rbn) and (self.composition == other.composition))
+        toreturn = (self.rbn == other.rbn) and (self.composition == other.composition)
+        if self.composing is None and other.composing is not None:
+            toreturn = False
+        elif self.composing is not None and other.composing is None:
+            toreturn = False
+        elif self.composing is not None and other.composing is not None and toreturn:
+            #neither are top of the tree
+            selftree = self.top_steps()[0].rbntree
+            othertree = other.top_steps()[0].rbntree
+            toreturn = selftree == othertree
+            #NOTE this does not guarantee we are in the same point within the tree
+            #we could be repeated subtrees within the same supertree e.g the ABs in (ABAB, ((AB, (A,B)), (AB, (A,B))))
+            #however, these types of comparison are rarely done, so I choose not to care yet
         if toreturn:
             assert hash(self) == hash(other)
-        assert toreturn == (repr(self) == repr(other))
         return toreturn
         
     def __getstate__(self):
@@ -167,6 +194,18 @@ class rbnmol(object):
             top = top.composing
             upsteps +=1
         return (top, upsteps)
+    
+    @property
+    def atoms(self):
+        if self.composition is None:
+            return (self,)
+        else:
+            atoms = []
+            for mol in self.composition:
+                for atom in mol.atoms:
+                    atoms.append(atom)
+            return tuple(atoms)
+                    
         
     def drill(self, side, steps):
         assert side in ("r", "l")
