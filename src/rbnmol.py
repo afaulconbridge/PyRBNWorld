@@ -137,14 +137,6 @@ class rbnmol(object):
         return str(self)
     
     def __hash__(self):
-        myatoms = self.atoms
-        topatoms = self.top_steps()[0].atoms
-        atomids = []
-        for atom in myatoms:
-            for i in xrange(len(topatoms)):
-                if topatoms[i] is atom:
-                    atomids.append(i)
-        atomids = tuple(atomids)
         return hash(self.rbn) + hash(self.composition)# + hash(atomids)
         
     @property
@@ -155,7 +147,7 @@ class rbnmol(object):
         else:
             return (self.rbn, tuple([x.rbntree for x in self.composition]))
             
-    def __eq__(self, other, assume = None):
+    def __eq__(self, other):
         if other is None:
             return False
         if other is self:

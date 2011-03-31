@@ -1,6 +1,13 @@
 import random
 import reaction
 
+import sys
+import os
+sys.path.append(os.path.abspath("../PyAChemKit/"))
+
+import AChemKit.sims_simple
+import AChemKit.bucket as AChemBucket
+
 def mols_to_string(mols):
     toreturn = ""
     for thing in mols:
@@ -26,37 +33,6 @@ class Bucket(object):
         for seed in seeds:
             for i in xrange(copies):
                 self.content = self.content + [self.rbncls.generate(10, seed)]
-            
-    def run(self, steps, rng=None):
-        if rng is None:
-            rng = random.Random()
-            
-        for i in xrange(steps):
-            rng.shuffle(self.content)
-            nextbucket = self.step()
-            self.content = nextbucket
-            
-    def step(self):
-        nextbucket = []
-        for j in xrange(0, len(self.content), 2):
-            if j < len(self.content)-1:
-                reactants = (self.content[j], self.content[j+1])
-                products = tuple(reaction.reaction(*reactants))
-                thisreaction = (reactants, products)
-                if products != reactants:
-                    if thisreaction not in self.reactions:
-                        self.report(reactants, products)
-                    #self.report(reactants, products)
-                    self.reactions.add(thisreaction)
-                    
-                    
-                #sanity check for conservation of mas
-                assert to_elements(reactants) == to_elements(products)
-                    
-                nextbucket = nextbucket + list(products)
-            else:
-                nextbucket.append(self.content[j])
-        return nextbucket
 
     @classmethod
     def report(cls, reactants, products):
@@ -70,28 +46,13 @@ class Bucket(object):
             if thing is not products[-1]:
                 print "+",
         print ""
-
-    
-class BucketText(Bucket):
-    """
-    Bucket that reports progress through terminal using the progressbar
-    module (http://code.google.com/p/python-progressbar/)
-    
-    Does not report reactions.
-    """
-    
-    def run(self, steps, rng):
-        import progressbar
-        bar = progressbar.ProgressBar()
         
-        if rng is None:
-            rng = random.Random()
-            
-        for i in bar(xrange(steps)):
-            rng.shuffle(self.content)
-            nextbucket = self.step()
-            self.content = nextbucket
-
-    @classmethod
-    def report(cls, reactants, products):
-        pass
+    def run(self, time, rng):
+        rbnworld = AChemKit.sims_simple.AbstractAChem()
+        rbnworld.noreactants = 2
+        rbnworld.react = reaction.reaction
+    
+        #events = AChemKit.sims_simple.simulate_itterative_iter(rbnworld, self.content, time, rng)
+        events = AChemKit.sims_simple.simulate_stepwise_iter(rbnworld, self.content, time, rng)
+        b = AChemBucket.Bucket(events)
+        print str(b.reactionnet)
