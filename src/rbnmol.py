@@ -34,7 +34,10 @@ class rbnmol(object):
         rbn = RBN.rbn.from_genome(n, genome, b=2)
         return cls(rbn)
     
-    def __init__(self, rbn, composition = None):
+    def __init__(self, rbn = None, composition = None):
+        if rbn is None and composition is None:
+            #must be using pickle of some sort
+            return
         
         #if we dont have an rbn, we can make one if we are a composite
         if rbn is None:
@@ -147,29 +150,35 @@ class rbnmol(object):
         else:
             return (self.rbn, tuple([x.rbntree for x in self.composition]))
             
+    @property
+    def parentpos(self):
+        if self.composing is None:
+            return ()
+        else:
+            #assert self in self.composing.composition
+            for i in xrange(len(self.composing.composition)):
+                if self.composing.composition[i] is self:
+                    return self.composing.parentpos + (i,)
+            assert False, "CANNOT GET HERE"
+            
     def __eq__(self, other):
         if other is None:
             return False
         if other is self:
             return True
-        assert self.rbn is not None
-        assert other.rbn is not None
-        toreturn = (self.rbn == other.rbn) and (self.composition == other.composition)
-        if self.composing is None and other.composing is not None:
-            toreturn = False
-        elif self.composing is not None and other.composing is None:
-            toreturn = False
-        elif self.composing is not None and other.composing is not None and toreturn:
-            #neither are top of the tree
-            selftree = self.top_steps()[0].rbntree
-            othertree = other.top_steps()[0].rbntree
-            toreturn = selftree == othertree
-            #NOTE this does not guarantee we are in the same point within the tree
-            #we could be repeated subtrees within the same supertree e.g the ABs in (ABAB, ((AB, (A,B)), (AB, (A,B))))
-            #however, these types of comparison are rarely done, so I choose not to care yet
+            
+        toreturn = (self.rbn == other.rbn)
+        if toreturn:
+            toreturn = (self.composition == other.composition)
+            if toreturn:
+                toreturn = (self.parentpos == other.parentpos)
+        
         if toreturn:
             assert hash(self) == hash(other)
         return toreturn
+        
+    def __lt__(self, other):
+        return str(self) < str(other)
         
     def __getstate__(self):
         return self.composing, self.composition, self.rbn

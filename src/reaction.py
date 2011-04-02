@@ -39,7 +39,7 @@ def validate(mol):
             validate(test)
     
 
-def reaction(A00, B00):
+def reaction(*reactants):
     #dont do complicated flipping-ness
     #reactions are either A+B or B+A. Assume this has
     #been done before this function.
@@ -47,8 +47,11 @@ def reaction(A00, B00):
     #This determines the outcome of one reaction between A and B
     #An alternative would be to determine all outcomes
     #and then pick one.
-
-    reactants = (A00, B00)
+    
+    if isinstance(reactants[0], list) or isinstance(reactants[0], tuple):
+        reactants = reactants[0]
+    
+    A00, B00 = reactants
     
     #go down to the smallest components in each one
     while A00.composition is not None:

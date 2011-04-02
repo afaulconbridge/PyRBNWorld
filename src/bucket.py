@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.abspath("../PyAChemKit/"))
 
 import AChemKit.sims_simple
+import AChemKit.sims_gillespie
 import AChemKit.bucket as AChemBucket
 
 def mols_to_string(mols):
@@ -53,6 +54,10 @@ class Bucket(object):
         rbnworld.react = reaction.reaction
     
         #events = AChemKit.sims_simple.simulate_itterative_iter(rbnworld, self.content, time, rng)
-        events = AChemKit.sims_simple.simulate_stepwise_iter(rbnworld, self.content, time, rng)
+        
+        #events = AChemKit.sims_simple.simulate_stepwise_multiprocessing_iter(rbnworld, self.content, time, rng)
+        #events = AChemKit.sims_simple.simulate_stepwise_iter(rbnworld, self.content, time, rng)
+        events = AChemKit.sims_gillespie.simulate_gillespie_iter(rbnworld, self.content, time, rng)
         b = AChemBucket.Bucket(events)
-        print str(b.reactionnet)
+        str(b.reactionnet)
+        #print str(b.reactionnet)

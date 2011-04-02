@@ -1,5 +1,4 @@
 import random
-import itertools
     
 class hashabledict(dict):
     def __hash__(self):
@@ -71,7 +70,9 @@ class rbn(object):
         newrbn.genome = genome
         return newrbn
 
-    def __new__(cls, states, functions, inputs, bonding = {}):
+    def __new__(cls, states=None, functions=None, inputs=None, bonding = {}):
+        if states is None and functions is None and inputs is None:
+            return object.__new__(cls)
         states = tuple(states)
         functions = tuple(functions)
         newinputs = []
@@ -224,6 +225,7 @@ class rbn(object):
         
     def basin(self):
         basin = {}
+        import itertools
         for states in itertools.product((0,1), repeat = len(self.states)):
             nextstates = self.update(states)
             basin[states] = nextstates
