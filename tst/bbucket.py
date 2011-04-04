@@ -18,7 +18,11 @@ if __name__ == "__main__":
     
     rng = random.Random(42)
     buck = bucket.Bucket(rbncls)
-    buck.fill(xrange(10), 20)
-    buck.run(200, rng)
+    buck.fill(xrange(20), 25)
     
+    import cPickle as pickle
+    a = pickle.dumps(buck)
+    b = pickle.loads(a)
+    assert buck.content == b.content
     
+    buck.run(100, rng)
