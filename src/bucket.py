@@ -49,7 +49,7 @@ class Bucket(object):
         print ""
         
     def run(self, time, rng):
-        rbnworld = AChemKit.sims_simple.AbstractAChem()
+        rbnworld = AChemKit.sims_simple.AChemAbstract()
         rbnworld.noreactants = 2
         rbnworld.react = reaction.reaction
     
