@@ -1,3 +1,29 @@
+#compiled python files
 *.pyc
 *.pyo
+
+#temporary editor files
 *~
+
+#pylint report
+pylint.txt
+
+#coverage report
+.coverage
+coverage.xml
+
+#geany editor project file
+RBNWorld.geany
+
+
+#documentation build directorys
+doc/latex/
+#doc/html/ #dont ignore this so it can be put on the git website in branch gh-pages
+!doc/latex/AChemKit.pdf
+
+#autobuild doc sources
+doc/src/rbnworld*.rst
+
+#sphinx internal caching
+doc/html/.doctrees/
+doc/html/.buildinfo
