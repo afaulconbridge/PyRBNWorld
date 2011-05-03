@@ -1,4 +1,8 @@
 import rbnmol
+import AChemKit
+import AChemKit.utils
+import AChemKit.utils.bag
+from AChemKit.utils.bag import OrderedFrozenBag
 
 def decompose(*mols):
     assert len(mols) > 0
@@ -39,7 +43,7 @@ def validate(mol):
             validate(test)
     
 
-def reaction(*reactants):
+def react(reactants):
     #dont do complicated flipping-ness
     #reactions are either A+B or B+A. Assume this has
     #been done before this function.
@@ -69,7 +73,7 @@ def reaction(*reactants):
                 #nothing has reacted
                 #nothing is composing larger things
                 #end reaction
-                return reactants
+                return OrderedFrozenBag(reactants)
             elif A00.composing is not None and B00.composing is None:
                 #only one has a larger structure
                 #go to the larger structure
@@ -142,7 +146,32 @@ def reaction(*reactants):
         newproducts.append(mol.collapse())
     products = newproducts
         
-    for product in products:
-        validate(product)
+    if __debug__:
+        for product in products:
+            validate(product)
             
-    return tuple(products)
+    return OrderedFrozenBag(products)
+    
+def all_reactions(*reactants):
+    a,b = reactants
+    rates = {}
+    for ordering in ((a,b), (b,a)):
+        reactants = OrderedFrozenBag(ordering)
+        products = react(*ordering)
+        #sanity check the total atoms are the same
+        if __debug__:
+            reactantsatoms = ""
+            for mol in reactants:
+                reactantsatoms += mol.atomstr()
+            productsatoms = ""
+            for mol in products:
+                productsatoms += mol.atomstr()
+            assert reactantsatoms == productsatoms, [reactantsatoms, productsatoms, tuple(reactants), tuple(products)]
+        
+            for mol in reactants:
+                assert mol.composing is None, mol
+            for mol in products:
+                assert mol.composing is None, mol
+        if products != reactants:
+            rates[reactants, products] = 1.0
+    return rates

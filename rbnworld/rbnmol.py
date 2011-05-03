@@ -1,18 +1,23 @@
-import rbn as RBN
+from rbn import rbn as RBN
 
 #this is the core of all RBNMol objects
 class rbnmol(object):
-    #this isnt just a molecule but also a functional group, or atom
-    #each rbnmol contains references to the rbnmols it is 
-    #composed of (if applicable) as well as references to the
-    #rbnmol it is composing (if applicable)
+    """
+    These represent not just molecules but also a functional groups, or atoms
+    
+    Each rbnmol contains references to the rbnmols it is 
+    composed of (if applicable) as well as references to the
+    rbnmol it is composing (if applicable). These are a called composition
+    and called composing respectively."""
+    
+    __slots__ = ["_composition", "_composing", "rbn", "_str"]
 
     #composition is the smaller bRBNs that we are made of
-    composition = None
+    #composition = None
     #composing is the larger bRBN that we are part of
-    composing = None
+    #composing = None
     #bRBN representation
-    rbn = None
+    #rbn = None
     
     #this is a class list of all different
     #atomic rbn structures for naming of
@@ -26,18 +31,47 @@ class rbnmol(object):
     def generate(cls, n, seed=None, rng = None):
         #both seed AND rng being specified makes no sense
         assert seed is None or rng is None
-        rbn = RBN.rbn.generate(n, seed, rng, b=2)
+        rbn = RBN.generate(n, seed, rng, b=2)
         return cls(rbn)
     
     @classmethod
     def from_genome(cls, genome):
-        rbn = RBN.rbn.from_genome(n, genome, b=2)
+        rbn = RBN.from_genome(n, genome, b=2)
         return cls(rbn)
     
-    def __init__(self, rbn = None, composition = None):
-        if rbn is None and composition is None:
-            #must be using pickle of some sort
-            return
+    @property
+    def composition(self):
+        return self._composition
+        
+    @composition.setter
+    def composition(self, value):
+        if self._composition is None:
+            if not isinstance(value, tuple):
+                value = tuple(value)
+            self._composition = value
+            #point the new copies to have self as a parent
+            for x in self.composition:
+                assert x.composing is None
+                x.composing = self
+        else:
+            raise AttributeError, "does not support attribute modification"
+        
+    @property
+    def composing(self):
+        return self._composing
+        
+    @composing.setter
+    def composing(self, value):
+        if self._composing is None:
+            self._composing = value
+        else:
+            raise AttributeError, "does not support attribute modification"
+    
+    def __new__(cls, rbn = None, composition = None, collapse = False):
+        self = object.__new__(cls)
+        self._str = None
+        self._composing = None
+        self._composition = None
         
         #if we dont have an rbn, we can make one if we are a composite
         if rbn is None:
@@ -52,7 +86,7 @@ class rbnmol(object):
             for other in composition[1:]:
                 rbn = rbn+other.rbn
                             
-        elif composition is not None:
+        elif __debug__ and composition is not None:
             testrbn = composition[0].rbn
             for other in composition[1:]:
                 testrbn = testrbn+other.rbn
@@ -68,7 +102,9 @@ class rbnmol(object):
         self.rbn = rbn
         self.rbn = self.rbncyclestate()
         
-        
+        if collapse:
+            while composition is not None and len(composition) == 1:
+                composition = composition[0].composition
         if composition is not None:
             #doesnt have to be this way but for the moment this
             #is a good thing to check stupid bugs havnt crept in
@@ -76,23 +112,23 @@ class rbnmol(object):
             #print composition
             #print self.rbn.bonding
             #print [x.rbn.bonding for x in composition]
-            for component in composition:
-                assert component.__class__ is self.__class__
-                if component is not composition[0]:
-                    assert component.rbn.bonding[min(component.rbn.bonding)] == 1, [component, composition]
-                if component is not composition[-1]:
-                    assert component.rbn.bonding[max(component.rbn.bonding)] == 1, [component, composition]
+            if __debug__:
+                for component in composition:
+                    assert component.__class__ is self.__class__
+                    if component is not composition[0]:
+                        assert component.rbn.bonding[min(component.rbn.bonding)] == 1, [component, composition]
+                    if component is not composition[-1]:
+                        assert component.rbn.bonding[max(component.rbn.bonding)] == 1, [component, composition]
                 
             #make a new copy of all our composing parts
-            self.composition = tuple((self.__class__(x.rbn, x.composition) for x in composition))
-            #point the new copies to have self as a parent
-            for x in self.composition:
-                assert x.composing is None
-                x.composing = self
-        else:
-            #self is an element, add it to the element list for naming
-            if (self.rbn.functions, self.rbn.inputs) not in self.elements:
-                self.elements.append((self.rbn.functions, self.rbn.inputs))
+            self.composition = tuple((self.__class__(x.rbn, x.composition, collapse) for x in composition))
+                
+        return self
+        
+        
+    def __init__(self, rbn = None, composition = None, collapse = False):
+        pass
+        
     
     @property
     def size(self):
@@ -101,39 +137,59 @@ class rbnmol(object):
         else:
             return sum((x.size for x in self.composition))
         
-    def __str__(self):
-        if self.composition is not None:
-            tostr = "{"
-            for i in xrange(len(self.composition)):
-                tostr = tostr+str(self.composition[i])
-                #if i is not len(self.composition)-1:
-                #    tostr = tostr+"-"
-            tostr = tostr+"}"
-        else:
-            i = self.elements.index((self.rbn.functions, self.rbn.inputs))
-            name = ""
-            while i > 26:
+    def __str__(self, recursive=False):
+        if self._str is None:
+            if self.composition is not None:
+                tostr = "{"
+                for i in xrange(len(self.composition)):
+                    tostr = tostr+self.composition[i].__str__(True)
+                tostr = tostr+"}"
+            else:
+                if (self.rbn.functions, self.rbn.inputs) not in self.elements:
+                    self.elements.append((self.rbn.functions, self.rbn.inputs))
+                assert self.elements.count((self.rbn.functions, self.rbn.inputs)) == 1
+                i = self.elements.index((self.rbn.functions, self.rbn.inputs))
+                name = ""
+                while i > 26:
+                    name += "abcdefghijklmnopqrstuvwxyz"[i%26]
+                    #make sure it is integer division
+                    i = int(i/26)
                 name += "abcdefghijklmnopqrstuvwxyz"[i%26]
-                #make sure it is integer division
-                i = int(i/26)
-            name += "abcdefghijklmnopqrstuvwxyz"[i%26]
-            tostr = name.capitalize()
+                tostr = name.capitalize()
+                
+            #print tostr
+                
+            #get the number of this state
+            def replaceall(old, toreplace, new):
+                for x in toreplace:
+                    old = old.replace(x, new)
+                return old
+                
+            cachekey = (self.rbn.functions, self.rbn.inputs)#replaceall(tostr, "-1234567890", "")
+            if cachekey not in self._namecache:
+                self._namecache[cachekey] = []
+            if self.rbn.states not in self._namecache[cachekey]:
+                self._namecache[cachekey].append(self.rbn.states)
+            stateno = self._namecache[cachekey].index(self.rbn.states) + 1
+            tostr = tostr+str(stateno)
             
-        #get the number of this state
-        if tostr not in self._namecache:
-            self._namecache[tostr] = []
-        if self.rbn not in self._namecache[tostr]:
-            self._namecache[tostr].append(self.rbn)
-        stateno = self._namecache[tostr].index(self.rbn) + 1
-        tostr = tostr+str(stateno)
-        
-        #add bonding state to the representation
-        if self.rbn.bonding[min(self.rbn.bonding)] == 1:
-            tostr = "-"+tostr
-        if self.rbn.bonding[max(self.rbn.bonding)] == 1:
-            tostr = tostr+"-"
-        
-        return tostr
+            #add bonding state to the representation
+            if self.rbn.bonding[min(self.rbn.bonding)] == 1:
+                tostr = "-"+tostr
+            if self.rbn.bonding[max(self.rbn.bonding)] == 1:
+                tostr = tostr+"-"
+            #if not recursive:
+            #    assert self.composing is None, self.composing
+            return tostr
+            self._str = tostr
+        return self._str
+
+    def atomstr(self):
+        atoms = ""
+        for char in str(self):
+            if char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                atoms += char
+        return atoms
     
     def __repr__(self):
         #hackily return string representation
@@ -172,13 +228,61 @@ class rbnmol(object):
             toreturn = (self.composition == other.composition)
             if toreturn:
                 toreturn = (self.parentpos == other.parentpos)
+                #print "parentpos", toreturn, self.parentpos, other.parentpos
+                
+        if self.composing is None and other.composing is not None:
+            return False
+        if self.composing is not None and other.composing is None:
+            return False
         
         if toreturn:
             assert hash(self) == hash(other)
+            
+        if self.composing is None:
+            slfstr = str(self)
+            othstr = str(other)
+            if toreturn != ( slfstr == othstr ):
+                print "="*25
+                print slfstr, othstr
+                a,b = self, other
+                while True:
+                    print "-"*25
+                    print a.rbn == b.rbn, a.rbn, b.rbn
+                    print a.rbn.states == b.rbn.states, a.rbn.states, b.rbn.states
+                    print a.rbn.functions == b.rbn.functions, a.rbn.functions, b.rbn.functions
+                    print a.rbn.inputs == b.rbn.inputs, a.rbn.inputs, b.rbn.inputs
+                    print a.rbn.bonding == b.rbn.bonding, a.rbn.bonding, b.rbn.bonding
+                    if a.composition is not None and b.composition is not None:
+                        assert a.composition[0].composing is a
+                        assert b.composition[0].composing is b
+                        a = a.composition[0]
+                        b = b.composition[0]
+                    else:
+                        break
+                
+                assert toreturn == ( slfstr == othstr ), [toreturn, slfstr == othstr]
         return toreturn
         
+    def __ne__(self, other):
+        return not self == other
+        
     def __lt__(self, other):
-        return str(self) < str(other)
+        return self.rbn < other.rbn
+        
+    def __gt__(self, other):
+        return self.rbn > other.rbn
+            
+    def __le__(self, other):
+        if self == other:
+            return True
+        else:
+            return self < other
+            
+    def __ge__(self, other):
+        if self == other:
+            return True
+        else:
+            return self > other
         
     def __getstate__(self):
         return self.composing, self.composition, self.rbn
@@ -477,26 +581,12 @@ class rbnmol(object):
     def collapse(self):
         if self.composition is None:
             return self
-        elif len(self.composition) == 1:
-            #collapse
-            self.composition[0].composing = self.composing
-            if self.composing is not None:
-                parent = self.composing
-                newcomposition = []
-                for x in parent.composition:
-                    if x is self:
-                        x = self.composition[0]
-                    newcomposition.append(x)
-                parent.composition = tuple(newcomposition)
-            return self.composition[0].collapse()
-                
-        elif len(self.composition) > 1:
-            newcomposition = tuple((x.collapse() for x in self.composition))
-            if newcomposition == self.composition:
+        else:
+            new = self.__class__(self.rbn, self.composition, True)
+            if new == self:
                 return self
             else:
-                return self.__class__(self.rbn, newcomposition).collapse()
-
+                return new.collapse()
     
 #alternative AChems can, to an extent, be implemented through these functions
 
@@ -520,5 +610,6 @@ def sumzero_pm_one(self, other):
 #instead create a real copy of the class somewhere in the file system and use that instead
 
 class rbnmol_total_sumzero(rbnmol):
+    __slots__ = rbnmol.__slots__
     bonding_score = total
     bonding_criterion = sumzero                    

@@ -1,3 +1,4 @@
+import weakref
 import rbnmol
 
 class rbnmol_cached(rbnmol.rbnmol):
@@ -16,12 +17,28 @@ class rbnmol_cached(rbnmol.rbnmol):
     classes of non-determinisitc molecules.
     """
     
-    _generate = {}
+    __slots__ = rbnmol.rbnmol.__slots__+["_collapse", "_decomposition", "_set_all_bonding", "_set_this_bonding", "_extend", "_rbntree"]
     
+    _generate = {}
     _seen = {}
+    _from_genome = {}
+    
+    
+    def __new__(cls, rbn = None, composition = None, collapse = False):
+        return rbnmol.rbnmol.__new__(cls, rbn, composition, collapse)
+    
+    def __init__(self, rbn = None, composition = None, collapse = False):
+        super(rbnmol_cached, self).__init__(rbn, composition, collapse)
+        self._collapse = None
+        self._decomposition = None
+        self._set_all_bonding = None
+        self._set_this_bonding = None
+        self._extend = None
+        self._rbntree = None
     
     @classmethod
     def seen(cls, mol):
+        return mol
         if mol.composing is not None:
             return mol
         if mol in cls._seen:
@@ -41,75 +58,63 @@ class rbnmol_cached(rbnmol.rbnmol):
             
         return cls._generate[key]
     
-    _from_genome = {}
-    
     @classmethod
     def from_genome(cls, genome):
         if genome not in cls._from_genome:
             cls._from_genome[genome] = super(rbnmol_cached, cls).from_genome(genome)
         return cls._from_genome[genome]
-    
-    _collapse = None
-    
+        
     def collapse(self):
         if self._collapse is None:
             mol = super(rbnmol_cached, self).collapse()
-            #mol = self.seen(mol)
             self._collapse = mol
+        assert self._collapse.atomstr() == self.atomstr()
         return self._collapse
-    
-    _decomposition = None
-    
+        
     def decomposition(self):
         if self._decomposition is None:
             mols = super(rbnmol_cached, self).decomposition()
             mols = [self.seen(x) for x in mols]
             self._decomposition = mols
+            
+        assert "".join((x.atomstr() for x in self._decomposition)) == self.atomstr()
         return self._decomposition
-
-    _set_all_bonding = None
-    
+    """
+        
     def set_all_bonding(self, side, state):
         if self._set_all_bonding is None:
-            self._set_all_bonding = {}
+            self._set_all_bonding = {}#weakref.WeakKeyDictionary()
         key = (side, state)
         if key not in self._set_all_bonding:
             mol = super(rbnmol_cached, self).set_all_bonding(side, state)
             mol = self.seen(mol)
             self._set_all_bonding[key] = mol
+        assert self._set_all_bonding[key].atomstr() == self.atomstr(), [self._set_all_bonding[key].atomstr(), self.atomstr()]
         return self._set_all_bonding[key]
         
-    _set_this_bonding = None
-    
     def set_this_bonding(self, side, state):
         if self._set_this_bonding is None:
-            self._set_this_bonding = {}
+            self._set_this_bonding = {}#weakref.WeakKeyDictionary()
         key = (side, state)
         if key not in self._set_this_bonding:
             mol = super(rbnmol_cached, self).set_this_bonding(side, state)
             mol = self.seen(mol)
             self._set_this_bonding[key] = mol
+        assert self._set_this_bonding[key].atomstr() == self.atomstr()
         return self._set_this_bonding[key]
         
-        
-    _extend = None
-    
-    #_cachemisses = set()
-    
     def extend(self, other):
         if self._extend is None:
-            self._extend = {}
+            self._extend = {}#weakref.WeakKeyDictionary()
         key = other
         if key not in self._extend:
-            #print "CACHE MISS:", "extend", self, other
-            #assert (self, other) not in self._cachemisses
-            #self._cachemisses.add((self, other))
             mol = super(rbnmol_cached, self).extend(other)
             mol = self.seen(mol)
             self._extend[key] = mol
         return self._extend[key]
+    """
+    
         
-    _rbntree = None
     @property
     def rbntree(self):
         if self._rbntree is None:
@@ -117,5 +122,6 @@ class rbnmol_cached(rbnmol.rbnmol):
         return self._rbntree
 
 class rbnmol_cached_total_sumzero(rbnmol_cached):
+    __slots__ = rbnmol_cached.__slots__
     bonding_score = rbnmol.total
-    bonding_criterion = rbnmol.sumzero                    
+    bonding_criterion = rbnmol.sumzero                  

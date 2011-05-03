@@ -1,22 +1,28 @@
 import random
     
 class hashabledict(dict):
+    __slots__=["_hash"]
     def __hash__(self):
-        return hash(frozenset(self.items()))
+        rval = getattr(self, '_hash', None)
+        if rval is None:
+            rval = self._hash = hash(frozenset(self.iteritems()))
+        return rval
     
 class rbn(object):
+
+    __slots__ = ["states", "functions", "inputs", "bonding", "_hash", "_states", "seed"]
+    
     #these are set to None in the class version
     #so that __init__ can tell between recycled instance passed 
     #on from __new__  through a generator function
     #and a fresh instance from __new__ioter
-    states = None
-    functions = None
-    inputs = None
-    bonding = None
-    _hash = None
+    #states = None
+    #functions = None
+    #inputs = None
+    #bonding = None
+    #_hash = None
 
 
-    _states = None
     @property
     def states(self):
         return self._states
@@ -70,28 +76,23 @@ class rbn(object):
         newrbn.genome = genome
         return newrbn
 
-    def __new__(cls, states=None, functions=None, inputs=None, bonding = {}):
-        if states is None and functions is None and inputs is None:
-            return object.__new__(cls)
-        states = tuple(states)
-        functions = tuple(functions)
-        newinputs = []
-        for inputgroup in inputs:
-            newinputs.append(tuple(inputgroup))
-        inputs = tuple(newinputs)
-        #this should be a frozen dict, but dont have one of those right now...
-        bonding = hashabledict(bonding)
-        return object.__new__(cls)
-
-    def __init__(self, states, functions, inputs, bonding = {}):  
-        #this was already initialized by a previous __new__ call
-        if self.states is not None:
-            return
-        self._states = tuple(states)
-        self.functions = tuple(functions)
-        self.inputs = tuple([tuple(x) for x in inputs])
+    def __init__(self, states, functions, inputs, bonding = {}):
+        try:  
+            self.states
+        except AttributeError:
+            if not isinstance(states, tuple):
+                states = tuple(states)
+            self._states = states
+            if not isinstance(functions, tuple):
+                functions = tuple(functions)
+            self.functions = functions
+            
+            self.inputs = tuple([tuple(x) for x in inputs])
+        
         #this should be a frozen dict, but dont have one of those right now...
         self.bonding = hashabledict(bonding)
+        self._hash = None
+        #this was already initialized by a previous __new__ call
         
         assert set(bonding.keys()) <= set(xrange(len(self.states)))
         assert len(states) == len(functions)
@@ -99,16 +100,62 @@ class rbn(object):
         
         
     def __hash__(self):
-        self._hash = hash(hash(self.states)+hash(self.functions)+hash(self.inputs))
+        if self._hash is None:
+            self._hash = hash(hash(self.states)+hash(self.functions)+hash(self.inputs))
         return self._hash
         
     def __eq__(self, other):
         if other is None:
             return False
+        if other is self:
+            return True
         toreturn = self.states == other.states and self.functions == other.functions and self.inputs == other.inputs and self.bonding == other.bonding
         if toreturn:
             assert hash(self) == hash(other)
         return toreturn
+        
+    def __ne__(self, other):
+        return not self == other
+        
+    def __lt__(self, other):
+        if self == other:
+            return False
+        elif self.functions != other.functions:
+            return self.functions < other.functions
+        elif self.inputs != other.inputs:
+            return self.inputs < other.inputs
+        elif self.states != other.states:
+            return self.states < other.states
+        elif self.bonding != other.bonding:
+            return self.bonding < other.bonding
+        else:
+            return False
+            
+    def __gt__(self, other):
+        if self == other:
+            return False
+        elif self.functions != other.functions:
+            return self.functions > other.functions
+        elif self.inputs != other.inputs:
+            return self.inputs > other.inputs
+        elif self.states != other.states:
+            return self.states > other.states
+        elif self.bonding != other.bonding:
+            return self.bonding > other.bonding
+        else:
+            return False
+            
+    def __le__(self, other):
+        if self == other:
+            return True
+        else:
+            return self < other
+            
+    def __ge__(self, other):
+        if self == other:
+            return True
+        else:
+            return self > other
         
     def __add__(self, other):
         reactants = (self, other)
@@ -195,8 +242,8 @@ class rbn(object):
         #    e.g. to map the basins of attraction
         
         #this may need optimizing, it will get called a LOT
-        nextstates = []
         n = len(self.functions)
+        nextstates = [None]*n
         for i in xrange(n):
             input1 = self.inputs[i][0]
             input2 = self.inputs[i][1]
@@ -205,7 +252,7 @@ class rbn(object):
             
             if i in self.bonding:
                 state1 = self.bonding[i]                
-            nextstates.append(self.functions[i][(1*state1)+(2*state2)])
+            nextstates[i] = self.functions[i][(1*state1)+(2*state2)]
         out = tuple(nextstates)
         return out
         
@@ -281,3 +328,69 @@ class rbn(object):
             bonding[bondingsite] = 0
         return self.__class__(self.states, self.functions, self.inputs, bonding)
         
+import array
+class rbnarray(rbn):
+    __slots__ = rbn.__slots__
+        
+    def __init__(self, *args, **kwargs):
+        super(rbnarray, self).__init__(*args, **kwargs)
+        self._states = array.array('H', self._states) #unsigned short
+        
+    @property
+    def states(self):
+        return self._states
+        
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = hash(hash(tuple(self.states))+hash(self.functions)+hash(self.inputs))
+        return self._hash
+
+    def update(self, states):
+        #given a set of states, get the next state 
+        #this does not use self.states so that 
+        # A) it can be repeated without creating lots
+        #    of custom objects
+        # B) it can be called without modifying the original
+        #    e.g. to map the basins of attraction
+        
+        #this may need optimizing, it will get called a LOT
+        n = len(self.functions)
+        nextstates = array.array('H', [0]*n)
+        for i in xrange(n):
+            input1 = self.inputs[i][0]
+            input2 = self.inputs[i][1]
+            state1 = states[input1]
+            state2 = states[input2]
+            
+            if i in self.bonding:
+                state1 = self.bonding[i]                
+            nextstates[i] = self.functions[i][state1+(2*state2)]
+        return nextstates
+        
+    def run_and_cycle(self):
+        states = self.states
+        history = []
+        
+        inputs = self.inputs
+        bonding = self.bonding
+        functions = self.functions
+        
+        while states not in history:
+            history.append(states)
+            
+            n = len(self.functions)
+            nextstates = array.array('H', [0]*n)
+            for i in xrange(n):
+                input1 = inputs[i][0]
+                input2 = inputs[i][1]
+                state1 = states[input1]
+                state2 = states[input2]
+                
+                if i in bonding:
+                    state1 = bonding[i]                
+                nextstates[i] = functions[i][state1+(2*state2)]
+                
+            states = nextstates
+            
+        i = history.index(states)
+        return tuple(history[:i]), tuple(history[i:])
