@@ -11,6 +11,7 @@ pylint.txt
 #coverage report
 .coverage
 coverage.xml
+nosetests.xml
 
 #geany editor project file
 RBNWorld.geany
