@@ -15,9 +15,10 @@ help:
 all: doc test
 
 test:
-	coverage run rununittest.py
-	coverage report
-	coverage xml
+	@#coverage run rununittest.py --include="rbnworld/*"
+	@#coverage report --include="rbnworld/*"
+	nosetests  --with-xunit --with-coverage --cover-package=rbnworld --where=rbnworld
+	@#coverage xml --include="rbnworld/*"
 
 pylint:
 	pylint --rcfile=pylint.rc -f parseable rbnworld > pylint.txt
