@@ -1,5 +1,7 @@
 from rbn import rbn as RBN
 
+
+
 #this is the core of all RBNMol objects
 class rbnmol(object):
     """
@@ -10,7 +12,8 @@ class rbnmol(object):
     rbnmol it is composing (if applicable). These are a called composition
     and called composing respectively."""
     
-    __slots__ = ["_composition", "_composing", "rbn", "_str"]
+    __slots__ = ["_composition", "_composing", "rbn"]
+    _str = {}
 
     #composition is the smaller bRBNs that we are made of
     #composition = None
@@ -69,7 +72,7 @@ class rbnmol(object):
     
     def __new__(cls, rbn = None, composition = None, collapse = False):
         self = object.__new__(cls)
-        self._str = None
+        #self._str = None
         self._composing = None
         self._composition = None
         
@@ -138,51 +141,54 @@ class rbnmol(object):
             return sum((x.size for x in self.composition))
         
     def __str__(self, recursive=False):
-        if self._str is None:
-            if self.composition is not None:
-                tostr = "{"
-                for i in xrange(len(self.composition)):
-                    tostr = tostr+self.composition[i].__str__(True)
-                tostr = tostr+"}"
-            else:
-                if (self.rbn.functions, self.rbn.inputs) not in self.elements:
-                    self.elements.append((self.rbn.functions, self.rbn.inputs))
-                assert self.elements.count((self.rbn.functions, self.rbn.inputs)) == 1
-                i = self.elements.index((self.rbn.functions, self.rbn.inputs))
-                name = ""
-                while i > 26:
-                    name += "abcdefghijklmnopqrstuvwxyz"[i%26]
-                    #make sure it is integer division
-                    i = int(i/26)
+        if self.composition is not None:
+            tostr = "{"
+            for i in xrange(len(self.composition)):
+                tostr = tostr+self.composition[i].__str__(True)
+            tostr = tostr+"}"
+        else:
+            if (self.rbn.functions, self.rbn.inputs) not in self.elements:
+                self.elements.append((self.rbn.functions, self.rbn.inputs))
+            assert self.elements.count((self.rbn.functions, self.rbn.inputs)) == 1
+            i = self.elements.index((self.rbn.functions, self.rbn.inputs))
+            name = ""
+            while i > 26:
                 name += "abcdefghijklmnopqrstuvwxyz"[i%26]
-                tostr = name.capitalize()
-                
-            #print tostr
-                
-            #get the number of this state
-            def replaceall(old, toreplace, new):
-                for x in toreplace:
-                    old = old.replace(x, new)
-                return old
-                
-            cachekey = (self.rbn.functions, self.rbn.inputs)#replaceall(tostr, "-1234567890", "")
-            if cachekey not in self._namecache:
-                self._namecache[cachekey] = []
-            if self.rbn.states not in self._namecache[cachekey]:
-                self._namecache[cachekey].append(self.rbn.states)
-            stateno = self._namecache[cachekey].index(self.rbn.states) + 1
-            tostr = tostr+str(stateno)
+                #make sure it is integer division
+                i = int(i/26)
+            name += "abcdefghijklmnopqrstuvwxyz"[i%26]
+            tostr = name.capitalize()
             
-            #add bonding state to the representation
-            if self.rbn.bonding[min(self.rbn.bonding)] == 1:
-                tostr = "-"+tostr
-            if self.rbn.bonding[max(self.rbn.bonding)] == 1:
-                tostr = tostr+"-"
-            #if not recursive:
-            #    assert self.composing is None, self.composing
-            return tostr
-            self._str = tostr
-        return self._str
+        #print tostr
+            
+        #get the number of this state
+        def replaceall(old, toreplace, new):
+            for x in toreplace:
+                old = old.replace(x, new)
+            return old
+            
+        cachekey = (self.rbn.functions, self.rbn.inputs)#
+        cachekey = replaceall(tostr, "-1234567890", "")
+        if cachekey not in self._namecache:
+            self._namecache[cachekey] = []
+        if self.rbn.states not in self._namecache[cachekey]:
+            self._namecache[cachekey].append(self.rbn.states)
+            
+        stateno = self._namecache[cachekey].index(self.rbn.states) + 1
+        tostr = tostr+str(stateno)
+        
+        #add bonding state to the representation
+        if self.rbn.bonding[min(self.rbn.bonding)] == 1:
+            tostr = "-"+tostr
+        if self.rbn.bonding[max(self.rbn.bonding)] == 1:
+            tostr = tostr+"-"
+        
+        #if tostr in self._str:
+        #    assert self._str[tostr] == self
+        #else:
+        #    self._str[tostr] = self
+        
+        return tostr
 
     def atomstr(self):
         atoms = ""
@@ -196,7 +202,7 @@ class rbnmol(object):
         return str(self)
     
     def __hash__(self):
-        return hash(self.rbn) + hash(self.composition)# + hash(atomids)
+        return hash(self.rbn) ^ hash(self.composition)# + hash(atomids)
         
     @property
     def rbntree(self):
@@ -237,7 +243,6 @@ class rbnmol(object):
         
         if toreturn:
             assert hash(self) == hash(other)
-            
         if self.composing is None:
             slfstr = str(self)
             othstr = str(other)
@@ -267,10 +272,10 @@ class rbnmol(object):
         return not self == other
         
     def __lt__(self, other):
-        return self.rbn < other.rbn
+        return (self.rbn, self.composition) < (other.rbn, other.composition)
         
     def __gt__(self, other):
-        return self.rbn > other.rbn
+        return (self.rbn, self.composition) > (other.rbn, other.composition)
             
     def __le__(self, other):
         if self == other:

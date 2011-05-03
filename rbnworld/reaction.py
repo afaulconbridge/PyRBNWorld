@@ -157,7 +157,7 @@ def all_reactions(*reactants):
     rates = {}
     for ordering in ((a,b), (b,a)):
         reactants = OrderedFrozenBag(ordering)
-        products = react(*ordering)
+        products = react(ordering)
         #sanity check the total atoms are the same
         if __debug__:
             reactantsatoms = ""

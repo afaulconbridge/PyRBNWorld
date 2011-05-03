@@ -94,14 +94,14 @@ class rbn(object):
         self._hash = None
         #this was already initialized by a previous __new__ call
         
-        assert set(bonding.keys()) <= set(xrange(len(self.states)))
+        #assert set(bonding.keys()) <= set(xrange(len(self.states)))
         assert len(states) == len(functions)
         assert len(states) == len(inputs)
         
         
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash(hash(self.states)+hash(self.functions)+hash(self.inputs))
+            self._hash = hash(self.states) ^ hash(self.functions) ^ hash(self.inputs)
         return self._hash
         
     def __eq__(self, other):
