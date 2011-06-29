@@ -43,7 +43,8 @@ doclatex:
 setup: 
 	sudo apt-get install python-dev python-setuptools 
 	#sudo apt-get install texlive-full #needed to build pdf docs, but big so not done by defualt
-	sudo easy_install -U coverage pylint sphinx
+	sudo easy_install -U coverage pylint sphinx nose
+	sudo python setup.py develop
 
 clean:
 	rm -rf *.pyc *.pyo *~
