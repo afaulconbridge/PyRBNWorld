@@ -1,3 +1,4 @@
+#from rbn import rbnarray as RBN
 from rbn import rbn as RBN
 
 
@@ -69,9 +70,17 @@ class rbnmol(object):
             self._composing = value
         else:
             raise AttributeError, "does not support attribute modification"
-    
-    def __new__(cls, rbn = None, composition = None, collapse = False):
-        self = object.__new__(cls)
+            
+    def __getstate__(self):
+        return self._composing, self._composition, self.rbn
+        
+    def __setstate__(self, state):
+        self._composing = state[0]
+        self._composition = state[1]
+        self.rbn = state[2]
+        
+        
+    def __init__(self, rbn = None, composition = None, collapse = False):
         #self._str = None
         self._composing = None
         self._composition = None
@@ -98,7 +107,8 @@ class rbnmol(object):
             #filling some levels of the composite
             assert testrbn.inputs == rbn.inputs
             assert testrbn.functions == rbn.functions
-            
+        
+        assert rbn is not None
         assert len(rbn.bonding) == 2
         
         #move rbn to be the start of the cycle
@@ -126,11 +136,10 @@ class rbnmol(object):
             #make a new copy of all our composing parts
             self.composition = tuple((self.__class__(x.rbn, x.composition, collapse) for x in composition))
                 
-        return self
-        
-        
-    def __init__(self, rbn = None, composition = None, collapse = False):
-        pass
+    
+#    def __new__(cls, rbn = None, composition = None, collapse = False):
+#        self = object.__new__(cls)
+#        return self
         
     
     @property
@@ -228,6 +237,8 @@ class rbnmol(object):
             return False
         if other is self:
             return True
+        if hash(self) == hash(other):
+            return True
             
         toreturn = (self.rbn == other.rbn)
         if toreturn:
@@ -241,6 +252,7 @@ class rbnmol(object):
         if self.composing is not None and other.composing is None:
             return False
         
+        """
         if toreturn:
             assert hash(self) == hash(other)
         if self.composing is None:
@@ -266,6 +278,7 @@ class rbnmol(object):
                         break
                 
                 assert toreturn == ( slfstr == othstr ), [toreturn, slfstr == othstr]
+        """
         return toreturn
         
     def __ne__(self, other):
@@ -288,14 +301,6 @@ class rbnmol(object):
             return True
         else:
             return self > other
-        
-    def __getstate__(self):
-        return self.composing, self.composition, self.rbn
-        
-    def __setstate__(self, state):
-        self.composing = state[0]
-        self.composition = state[1]
-        self.rbn = state[2]
         
     def top_steps(self):
         upsteps = 0

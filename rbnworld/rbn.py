@@ -10,7 +10,7 @@ class hashabledict(dict):
     
 class rbn(object):
 
-    __slots__ = ["states", "functions", "inputs", "bonding", "_hash", "_states", "seed"]
+    __slots__ = ["states", "functions", "inputs", "bonding", "_hash", "_states", "seed", "_run_and_cycle"]
     
     #these are set to None in the class version
     #so that __init__ can tell between recycled instance passed 
@@ -92,12 +92,25 @@ class rbn(object):
         #this should be a frozen dict, but dont have one of those right now...
         self.bonding = hashabledict(bonding)
         self._hash = None
-        #this was already initialized by a previous __new__ call
+        self.seed = None
+        self._run_and_cycle = None
         
         #assert set(bonding.keys()) <= set(xrange(len(self.states)))
         assert len(states) == len(functions)
         assert len(states) == len(inputs)
         
+    def __getstate__(self):
+        return (self.states, self.functions, self.inputs, tuple(self.bonding.items()), self.seed, self._run_and_cycle)
+        
+    def __setstate__(self, state):
+        states, functions, inputs, bonding, seed, _run_and_cycle = state
+        self._states = states
+        self.functions = functions
+        self.inputs = inputs
+        self.bonding = hashabledict(bonding)
+        self.seed =  seed
+        self._run_and_cycle = _run_and_cycle
+        self._hash = None
         
     def __hash__(self):
         if self._hash is None:
@@ -259,13 +272,15 @@ class rbn(object):
     #here are several convenience functions
             
     def run_and_cycle(self):
-        states = self.states
-        history = []
-        while states not in history:
-            history.append(states)
-            states = self.update(states)
-        i = history.index(states)
-        return tuple(history[:i]), tuple(history[i:])
+        if self._run_and_cycle is None:
+            states = self.states
+            history = []
+            while states not in history:
+                history.append(states)
+                states = self.update(states)
+            i = history.index(states)
+            self._run_and_cycle = (tuple(history[:i]), tuple(history[i:]))
+        return self._run_and_cycle
             
     def cycle(self):
         return self.run_and_cycle()[1] 

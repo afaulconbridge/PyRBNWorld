@@ -152,7 +152,7 @@ def react(reactants):
             
     return OrderedFrozenBag(products)
     
-def all_reactions(*reactants):
+def all_reactions(reactants):
     a,b = reactants
     rates = {}
     for ordering in ((a,b), (b,a)):
@@ -174,4 +174,4 @@ def all_reactions(*reactants):
                 assert mol.composing is None, mol
         if products != reactants:
             rates[reactants, products] = 1.0
-    return rates
+    return rates.items()

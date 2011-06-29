@@ -23,6 +23,16 @@ class rbnmol_cached(rbnmol.rbnmol):
     _seen = {}
     _from_genome = {}
     
+    def __getstate__(self):
+        return self._composing, self._composition, self.rbn, self._collapse, self._decomposition
+        
+    def __setstate__(self, state):
+        self._composing = state[0]
+        self._composition = state[1]
+        self.rbn = state[2]
+        self._collapse = state[3]
+        self._decomposition = state[4]
+        
     
     def __new__(cls, rbn = None, composition = None, collapse = False):
         return rbnmol.rbnmol.__new__(cls, rbn, composition, collapse)
