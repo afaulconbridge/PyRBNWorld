@@ -2,8 +2,10 @@
 Some utilities and tools for using RBNWorld with other libraries, e.g. PyAChemKit
 
 """
-
-
+import AChemKit
+import AChemKit.utils
+import AChemKit.utils.utils
+from AChemKit.utils.utils import long_subseq
 
 def sufficiently_similar(mols, proportion = 0.5):
     """
