@@ -11,6 +11,7 @@ help:
 	@echo "  dochtml    Generate documentation in HTML"
 	@echo "  doclatex   Generate documentation in LaTeX"
 	@echo "  setup      Try to install / update required modules"
+	@echo "  develop    Install as a development version"
 	@echo "  clean      Remove temporary files"
 
 all: doc test
@@ -44,6 +45,8 @@ setup:
 	sudo apt-get install python-dev python-setuptools 
 	#sudo apt-get install texlive-full #needed to build pdf docs, but big so not done by defualt
 	sudo easy_install -U coverage pylint sphinx nose
+	
+develop:
 	sudo python setup.py develop
 
 clean:
