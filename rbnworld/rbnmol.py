@@ -40,7 +40,7 @@ class rbnmol(object):
     
     @classmethod
     def from_genome(cls, genome):
-        rbn = RBN.from_genome(n, genome, b=2)
+        rbn = RBN.from_genome(genome, b=2)
         return cls(rbn)
     
     @property

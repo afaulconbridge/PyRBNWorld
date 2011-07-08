@@ -73,7 +73,7 @@ class rbn(object):
             bonding[i] = 0
             
         newrbn = cls(states, functions, inputs, bonding)
-        newrbn.genome = genome
+        #newrbn.genome = genome
         return newrbn
 
     def __init__(self, states, functions, inputs, bonding = {}):
